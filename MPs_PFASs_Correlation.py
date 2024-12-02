@@ -33,7 +33,7 @@ rf = RandomForestRegressor(random_state=42)
 random_search = RandomizedSearchCV(estimator=rf, param_distributions=param_grid, n_iter=100, cv=5,
                                    scoring='neg_mean_squared_error', verbose=2, n_jobs=1, random_state=42)
 random_search.fit(X_train, y_train)
-# 输出最佳参数
+# hyperparameters
 print("Best parameters for Random Forest:", random_search.best_params_)
 rf_best = RandomForestRegressor(**random_search.best_params_, random_state=42)
 rf_best.fit(X_train, y_train)
@@ -109,14 +109,23 @@ best_r2 = r2_score(y_test, predictions)
 print('MSE of the best model: ', best_mse)
 print('R^2 of the best model: ', best_r2)
 
-# 可视化特征重要性
+# Y-scrambling
+y_train_scrambled = np.random.permutation(y_train)
+xgb_best.fit(X_train, y_train_scrambled)
+y_scrambled_pred_xgb = xgb_best.predict(X_test)
+scrambled_mse = mean_squared_error(y_test, y_scrambled_pred_xgb)
+scrambled_r2 = r2_score(y_test, y_scrambled_pred_xgb)
+print('MSE of the scrambled model: ', scrambled_mse)
+print('R^2 of the scrambled model: ', scrambled_r2)
+
+# Figure Drawing
 feature_importances = best_rf.feature_importances_
 feature_names = X.columns
 sorted_idx = np.argsort(feature_importances)[-10:]
 important_features = feature_importances[sorted_idx]
 important_feature_names = feature_names[sorted_idx]
 
-# 对筛选后的特征重要性进行排序
+# Feature ranking
 sorted_important_idx = np.argsort(important_features)
 
 # visialization
@@ -126,7 +135,7 @@ plt.yticks(range(len(sorted_important_idx)), important_feature_names[sorted_impo
 plt.xlabel("Feature Importance", fontsize=16)
 for i, v in enumerate(important_features[sorted_important_idx]):
     plt.text(v + 0.001, i, f"{v:.3f}", fontsize=12)
-# 计算并显示图中变量合计的重要性
+# feature importance
 total_importance = np.sum(important_features)
 plt.figtext(0.15, 0.15, f"Total Importance of Displayed Features: {total_importance:.3f}", ha="center", fontsize=12)
 #plt.savefig('top_10_feature_importance.pdf', bbox_inches='tight')
@@ -169,8 +178,8 @@ for i, idx in enumerate(sorted_idx):
     )
     ax[i].set_title(f"PDP for {feature_names[idx]}")
 plt.suptitle("Partial Dependence Plots for Top 2 Important Features", fontsize=16)
-plt.subplots_adjust(top=0.85)  # 调整标题位置
-# 保存为PDF格式
+plt.subplots_adjust(top=0.85)  
+# save as pdf
 plt.savefig('pdp_top_2_features.pdf', format='pdf', bbox_inches='tight')
 plt.close()
 
